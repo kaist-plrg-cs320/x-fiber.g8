@@ -7,7 +7,7 @@ object Value {
   type Env = Map[String, Value]
   type Cont = Value => Value
 
-  case class IntV(value: Int) extends Value
+  case class IntV(value: BigInt) extends Value
   case class BooleanV(value: Boolean) extends Value
   case class TupleV(values: List[Value]) extends Value
   case object NilV extends Value
