@@ -1,6 +1,6 @@
 package cs320
 
-import org.jline.reader.{LineReaderBuilder, EndOfFileException, UserInterruptException}
+import org.jline.reader.{LineReaderBuilder, EndOfFileException, UserInterruptException, Expander, History}
 import org.jline.terminal.TerminalBuilder
 
 import scala.Console.{MAGENTA => M, CYAN => C, RESET}
@@ -11,7 +11,14 @@ object Main {
 
   def main(args: Array[String]): Unit = {
     val terminal = TerminalBuilder.builder.build()
-    val reader = LineReaderBuilder.builder.terminal(terminal).build()
+    val expander = new Expander {
+      def expandHistory(history: History, line: String): String = line
+      def expandVar(word: String): String = word
+    }
+    val reader = LineReaderBuilder.builder
+      .terminal(terminal)
+      .expander(expander)
+      .build()
     def strs: LazyList[String] = (
       try {
         reader.readLine(s"\n$M$name>$RESET ")
