@@ -3,7 +3,7 @@ package cs320
 import org.jline.reader
 import org.jline.terminal.TerminalBuilder
 import org.jline.utils.AttributedString
-import reader.{History, LineReader, LineReaderBuilder, EndOfFileException, EOFError, UserInterruptException}
+import reader.{LineReader, LineReaderBuilder, EndOfFileException, EOFError, UserInterruptException}
 
 import scala.Console.{MAGENTA => M, CYAN => C, YELLOW => Y, RED => R, RESET}
 
@@ -19,9 +19,9 @@ object Main {
       .terminal(terminal)
       .highlighter(Highlighter)
       .parser(Parser)
-      .expander(Expander)
       .variable(LineReader.SECONDARY_PROMPT_PATTERN, "%M")
       .variable(LineReader.HISTORY_FILE, s".${name.toLowerCase}_history")
+      .option(LineReader.Option.DISABLE_EVENT_EXPANSION, true)
       .build()
     def strs: LazyList[String] = (
       try {
@@ -34,7 +34,7 @@ object Main {
     println(s"Welcome to the $M$name$RESET REPL.")
     println(s"Type in :q, :quit, or the EOF character to terminate the REPL.")
 
-    for (str <- strs.takeWhile(s => !eof(s)) if str.nonEmpty) {
+    for (str <- strs.takeWhile(s => !eof(s)) if str.trim.nonEmpty) {
       val opt = lift {
         val expr = Expr(str)
         println(s"  ${C}Parsed:$RESET $expr")
@@ -122,23 +122,22 @@ object Parser extends reader.Parser {
 
   def parse(input: String, cursor: Int, context: ParseContext): ParsedLine = {
     def default = new ParsedLine(cursor, input, "", 0)
-    def acceptLine =
-      !input.substring(cursor).contains(System.lineSeparator) &&
-      input.count(_ == '(') == input.count(_ == ')') &&
-      input.count(_ == '{') == input.count(_ == '}') &&
-      input.count(_ == '[') == input.count(_ == ']') &&
-      input.trim.last != ';' &&
-      input.trim.last != '=' &&
-      input.trim.last != '>'
+    def acceptLine = {
+      val i = input.trim
+      def isEmpty = i.isEmpty
+      def isLastLine = !input.substring(cursor).contains(System.lineSeparator)
+      def isBalanced =
+        i.count(_ == '(') == i.count(_ == ')') &&
+        i.count(_ == '{') == i.count(_ == '}') &&
+        i.count(_ == '[') == i.count(_ == ']')
+      val noLast = Set('-', '!', '+', '*', '/', '%', '=', '<', '>', '&', '|', ':', '.', ';')
+      def isFinished = !noLast(i.last)
+      isEmpty || isLastLine && isBalanced && isFinished
+    }
     context match {
       case ParseContext.ACCEPT_LINE if acceptLine => default
       case ParseContext.COMPLETE => default
       case _ => throw new EOFError(-1, -1, "", Main.newLinePrompt)
     }
   }
-}
-
-object Expander extends reader.Expander {
-  def expandHistory(history: History, line: String): String = line
-  def expandVar(word: String): String = word
 }
