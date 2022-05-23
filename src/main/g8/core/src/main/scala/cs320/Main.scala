@@ -14,7 +14,7 @@ object Main {
   val newLinePrompt = " " * (name.length + 2)
 
   def main(args: Array[String]): Unit = {
-    val terminal = TerminalBuilder.builder.build()
+    val terminal = TerminalBuilder.builder.dumb(false).build()
     val reader = LineReaderBuilder.builder
       .terminal(terminal)
       .highlighter(Highlighter)
