@@ -11,8 +11,8 @@ object Fuzzer {
     ("node -v" #> out).! == 0
   }
 
-  def generateExpr(): List[(String, String)] =
-    "node js/fuzzer.js".lazyLines
+  def generateExpr(seed: Int): List[(String, String)] =
+    s"node js/fuzzer.js $seed".lazyLines
       .toList
       .sliding(2, 2)
       .collect { case List(a, b) => a -> b }
@@ -37,8 +37,8 @@ object Fuzzer {
     }
   }
 
-  def runOnce(): Boolean = {
-    generateExpr().to(LazyList).map {
+  def runOnce(seed: Int): Boolean = {
+    generateExpr(seed).to(LazyList).map {
       case (expr, res1) =>
         val (res2, trace) = interp(expr)
         (expr, res1, res2, trace)
@@ -61,7 +61,7 @@ object Fuzzer {
     if (!nodeExists()) println("Node.js not found")
     else {
       var i = 0
-      while (runOnce()) {
+      while (runOnce(i / 10000)) {
         if (i > 0)
           print("\b" * i.toString.length)
         i += 10000
